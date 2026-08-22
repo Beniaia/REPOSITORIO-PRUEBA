@@ -1,0 +1,25 @@
+# Dependencias
+/node_modules
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+
+# Variables de entorno y secretos (service_role de Supabase, token de Apify)
+.env
+.env*.local
+.env.local
+.env.production
+
+# Supabase local
+/supabase/.branches
+/supabase/.temp
+
+# Build / cache
+.turbo
+.vercel
+
+# Sistema
+.DS_Store
+*.log
