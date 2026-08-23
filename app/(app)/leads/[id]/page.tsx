@@ -55,7 +55,8 @@ export default async function PaginaFichaLead({
   const puedeContactar =
     !bajaExistente &&
     !!lead.permiso_llamada_en &&
-    mensajePrimerContacto?.estado === "aprobado";
+    (mensajePrimerContacto?.estado === "aprobado" ||
+      mensajePrimerContacto?.estado === "error");
 
   return (
     <div className="space-y-6">
@@ -212,6 +213,13 @@ export default async function PaginaFichaLead({
                 <p className="mb-1 font-medium text-tierra">{m.asunto}</p>
                 <p className="whitespace-pre-wrap text-sm text-tierra/80">{m.cuerpo}</p>
 
+                {m.estado === "error" ? (
+                  <p className="mt-2 text-sm text-red-700">
+                    No se ha podido enviar este email. Puedes volver a pulsar
+                    &quot;Contactar&quot; para intentarlo de nuevo.
+                  </p>
+                ) : null}
+
                 {m.estado === "borrador" ? (
                   <div className="mt-3 flex gap-2">
                     <form action={aprobarMensaje.bind(null, m.id, lead.id)}>
@@ -253,11 +261,14 @@ export default async function PaginaFichaLead({
                     ? "Confirma antes el permiso telefónico."
                     : "El primer email todavía no está aprobado."}
               </p>
+            ) : mensajePrimerContacto?.estado === "error" ? (
+              <p className="mt-2 text-center text-xs text-tierra/50">
+                El intento anterior falló. Al pulsar aquí se vuelve a intentar el envío real.
+              </p>
             ) : (
               <p className="mt-2 text-center text-xs text-tierra/50">
-                Hasta que no pulses aquí, nunca se contacta a este lead. El envío real (Resend)
-                está pendiente de configurar (fase 4) — de momento esto registra la aprobación
-                y la auditoría.
+                Hasta que no pulses aquí, nunca se contacta a este lead. Al pulsar, se envía un
+                email real e irreversible al contacto.
               </p>
             )}
           </form>

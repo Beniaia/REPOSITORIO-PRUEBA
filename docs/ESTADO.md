@@ -15,12 +15,13 @@
 | Repo Next.js inicializado | ✅ Next 16 + React 19 + Tailwind + `@supabase/ssr`. `build`, `lint` y `typecheck` en verde |
 | Endpoint de ingesta | ✅ `/api/ingest/leads` con validación Zod, dedup por dominio/email, consulta de bajas antes de insertar. Sólo crea borradores, nunca marca enviado |
 | Consola de leads | 🟡 Bandeja (`/leads`) y ficha (`/leads/[id]`) funcionando contra Supabase real, con login. Falta pipeline/métricas/ajustes editables |
-| Motor de prospección (skill) | 🟡 Existe una skill previa `prospeccion-baladre`, hay que reescribirla para este sistema |
+| Motor de prospección (skill) | ✅ Reescrita para este sistema en `.claude/skills/prospeccion-baladre/SKILL.md` (la versión antigua, que escribía en Sheets, sigue en `agente-prospeccion-baladre/` sin tocar). Sin ejecutar todavía: bloqueada por token de Apify y por que la app esté desplegada |
 | Pipeline de Apify | 🟡 Diseñado en `APIFY.md`, sin ejecutar todavía. Falta validar los esquemas de entrada de los actores |
 | Descubrimiento con `vibe-prospecting` | ✅ Conector conectado y **cobertura verificada el 22/08/2026** con consultas reales. Recetas en `VIBE_PROSPECTING.md` |
 | Tarea programada semanal | ⬜ Pendiente |
 | Redacción y aprobación de emails | ⬜ Pendiente |
-| Envío real (fase 4) | ⛔ Bloqueado por revisión jurídica y por el dominio |
+| Envío real (fase 4, con dominio propio y Resend) | ⛔ Bloqueado por revisión jurídica y por el dominio |
+| Envío real — piloto por Gmail personal (D-22) | ✅ Probado con un envío real, funciona |
 | Migración del Google Sheets `BALADRE_LEADS` | ⬜ Pendiente |
 
 ## 2. Decisiones tomadas
@@ -48,12 +49,14 @@
 | D-19 | **Antes del primer contacto, llamada telefónica obligatoria** pidiendo permiso; se registra en `leads.permiso_llamada_en/por` y el botón "Contactar" no se activa sin ese registro | 23/08/2026 | Requisito legal según el negocio, más estricto que el diseño original (que se apoyaba sólo en interés legítimo). Refuerza la respuesta a P-03 |
 | D-20 | **Despliegue en Vercel Hobby (gratuito)**, con el dominio `*.vercel.app` que da por defecto | 23/08/2026 | ⚠️ Vercel Hobby está documentado como **restringido a uso no comercial** (ver P-02 y `ARQUITECTURA.md` §7). Decisión tomada con esa advertencia sobre la mesa; revisar si Vercel lo cuestiona o pasar a Pro (20 $/mes) |
 | D-21 | **Cada email debe indicar que lo envía un asistente de IA en nombre de Baladre**, y llevar un botón visible de baja | 23/08/2026 | Transparencia (AI Act) + refuerzo de RF-08. Actualizado en `CLAUDE.md` §6 |
+| D-22 | **Piloto de envío por Gmail personal** (`nbrotonscongost@gmail.com`), sin dominio propio ni SPF/DKIM/DMARC, dirección intercambiable vía `GMAIL_USER`/`GMAIL_APP_PASSWORD` | 23/08/2026 | Respuesta interina a P-01. **Explícitamente para probar antes de entregar el proyecto al cliente** — la cuenta de Gmail de Nuria es de pruebas, no la definitiva. Se sustituirá por el buzón real de Baladre en la entrega, cambiando sólo esas dos variables de entorno. Verificación en dos pasos activada y contraseña de aplicación generada el 23/08/2026 — **probado con un envío real, funciona** |
+| D-23 | **Cada tanda de prospección es de 10 leads** (bajo demanda o semanal), repartidos orientativamente 3 arquitectura / 3 agencias / 2 grupos tipo Vocento / 1 hotel / 1 restauración-joyería | 23/08/2026 | Confirmado explícitamente por Nuria. Reparto documentado en `SKILL.md`, no es una cuota rígida |
 
 ## 3. Preguntas abiertas — bloquean trabajo
 
 | # | Pregunta | Bloquea | Quién decide |
 |---|---|---|---|
-| P-01 | **Dominio de envío.** Baladre usa Gmail gratuito. ¿Se envía desde `baladreceramica.com` (hay que configurar SPF/DKIM/DMARC) o desde un subdominio tipo `hola.baladreceramica.com`? | Fase 4 | Nuria + Baladre |
+| P-01 | **Dominio de envío.** Baladre usa Gmail gratuito. ¿Se envía desde `baladreceramica.com` (hay que configurar SPF/DKIM/DMARC) o desde un subdominio tipo `hola.baladreceramica.com`? Respuesta interina de piloto (D-22): Gmail personal, sin dominio propio configurado. La pregunta de fondo para producción sigue abierta | Fase 4 | Nuria + Baladre |
 | P-02 | **Hosting definitivo.** Vercel Hobby está restringido a uso no comercial (verificado en su documentación). ¿Se paga Pro a 20 $/mes o se busca alternativa (Railway, Render, Supabase Edge Functions)? | Despliegue | Nuria |
 | P-03 | **Revisión jurídica LSSI art. 21** para el email B2B en frío | Fase 4 completa | Abogado |
 | P-04 | **Directorios sectoriales**: cuáles permiten extracción automatizada según sus términos de uso | Alcance del motor | Nuria, leyendo términos |
@@ -75,7 +78,7 @@
 |---|---|---|
 | Supabase (proyecto nuevo) | ✅ Creado y con esquema aplicado (`ytqjhsbcnswshybhgevc`) | Free: 500 MB, se pausa tras 1 semana sin actividad. Pro desde 25 $/mes |
 | Vercel (equipo) | ⬜ | Hobby gratis pero **no comercial**; Pro 20 $/mes |
-| Apify (token de API) | 🟡 Cuenta ya existente; falta copiar el token a las variables de entorno del motor | Free: 5 $/mes de crédito. Starter 29 $/mes |
+| Apify (token de API) | ✅ Token guardado en `.env.local` (`APIFY_API_TOKEN`) | Free: 5 $/mes de crédito. Starter 29 $/mes |
 | Vibe Prospecting | ✅ Conector conectado y validado el 22/08/2026 | Créditos: 1 por fila en el fetch; enriquecimiento aparte. Precio del crédito sin verificar (P-12) |
 | Resend (fase 4) | ⬜ | Free: 3.000 emails/mes, 100/día, 3 dominios |
 | Dominio para envío | ⬜ | Depende de P-01 |
@@ -83,6 +86,7 @@
 | Zoom (API, OAuth/Server-to-Server) | ⬜ Pendiente (P-13) | Por confirmar |
 | Google Cloud / Calendar API | ⬜ Pendiente (P-14) | Gratis dentro de cuota |
 | Gmail de Baladre (lectura de respuestas) | ⬜ Pendiente (P-15) | Ya hay MCP de Gmail conectado a nivel de cuenta de Claude; falta confirmar que lee la bandeja correcta de Baladre |
+| Gmail (SMTP piloto, envío real) | ✅ Verificación en dos pasos activada, contraseña de aplicación generada y probada con un envío real | Gratis dentro del límite de envío de Gmail (~500/día en cuenta personal) |
 
 Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ninguna al repositorio.**
 
@@ -92,10 +96,11 @@ Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ni
 - **Supabase Free se pausa** tras una semana sin actividad. Si la tarea semanal falla dos veces seguidas, el proyecto puede quedarse dormido. Vigilar en las primeras semanas.
 - **Coste de tokens del motor** no medido todavía. Hasta que no haya una ejecución real no sabemos el coste por lead. Registrarlo en `ejecuciones.coste_estimado` desde el primer día.
 - **Convivencia con el sistema antiguo.** Mientras Relevance AI siga activo, hay dos sitios donde se puede escribir a un lead. Riesgo real de escribir dos veces a la misma persona. Fijar fecha de apagado del sistema anterior.
+- **Envío por Gmail personal sin dominio propio (D-22).** Sin SPF/DKIM/DMARC alineados con `baladreceramica.com`, puede caer en spam con destinatarios de política estricta, y Gmail tiene un límite diario de envío (~500). Aceptable para el piloto; no vale para escalar volumen — ahí es donde vuelve a hacer falta resolver P-01 de verdad.
 
 ## 6. Siguiente paso concreto
 
-1. **Rellenar `.env.local`**: `SUPABASE_SERVICE_ROLE_KEY` (Supabase dashboard → Project Settings → API) e `INGEST_SERVICE_TOKEN` (inventar una cadena aleatoria larga). Sin esto, `/baja` y `/api/ingest/leads` fallan — ya verificado en local, es el único bloqueo real que queda para que la app funcione de punta a punta.
+1. **Rellenar `.env.local`**: `SUPABASE_SERVICE_ROLE_KEY` (Supabase dashboard → Project Settings → API), `INGEST_SERVICE_TOKEN` (inventar una cadena aleatoria larga), y **`GMAIL_USER`/`GMAIL_APP_PASSWORD`** — para esto último, activar antes la verificación en dos pasos en `nbrotonscongost@gmail.com` y generar la contraseña en `myaccount.google.com/apppasswords`. Sin esto, `/baja`, `/api/ingest/leads` y el botón "Contactar" fallan de forma controlada (ya verificado en local para los dos primeros).
 2. **Crear al menos un usuario en Supabase Auth** (Eva o María del Mar) para poder entrar en `/login` — todavía no hay ninguno.
 3. Responder P-05 (quién aprueba, ahora con matiz: el email de invitación a reunión sale solo, D-17).
 4. Conectar Vercel al repo de GitHub y desplegar (D-20: Hobby gratuito, con el aviso de uso no comercial sobre la mesa).
@@ -122,3 +127,4 @@ Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ni
 | 21/08/2026 | Revisión del papel de Google Maps: se limita a hoteles y restauración (D-13). Al intentar probar `vibe-prospecting` se descubre que su conector no está instalado (P-11) | Nuria + Claude |
 | 22/08/2026 | Conector de `vibe-prospecting` conectado. **Validación empírica de la cobertura** con consultas reales al ICP de Baladre; documento `VIBE_PROSPECTING.md` con recetas, universos medidos y tres trampas técnicas. Maps sale del ciclo semanal (D-14, D-15, D-16) | Nuria + Claude |
 | 23/08/2026 | Repo conectado a GitHub y estructura inicial subida. Ampliación de alcance: seguimiento por respuesta con reunión de Zoom + Google Calendar, permiso telefónico obligatorio, transparencia IA en el email (D-17 a D-21, CLAUDE.md actualizado). Esquema v1.1 aplicado en un proyecto de Supabase ya existente (`ytqjhsbcnswshybhgevc`): tabla `reuniones`, permiso de llamada, triggers de guardarraíles. App Next 16 + React 19 + Tailwind scaffolded (login, bandeja, ficha de lead, `/baja`, endpoint de ingesta); `build`/`lint`/`typecheck` en verde y probado en local. Quedan abiertas P-13/14/15 (Zoom, Calendar, Gmail) y rellenar `SUPABASE_SERVICE_ROLE_KEY` | Nuria + Claude |
+| 23/08/2026 | Botón "Contactar" conectado a un envío real por SMTP de Gmail (`lib/email/enviar.ts`, D-22): piloto con el correo personal de Nuria, sin dominio propio. Se reescribe `marcarContactado` para actualizar primero la fila en `mensajes` (donde disparan los guardarraíles de la BD) y sólo enviar el email si esa actualización tiene éxito de verdad; si el envío falla después, el mensaje pasa a `estado='error'` y se puede reintentar desde la ficha. Pendiente de que el usuario active la verificación en dos pasos y genere la contraseña de aplicación de Gmail | Nuria + Claude |

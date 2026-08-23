@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { crearClienteServidor } from "@/lib/supabase/server";
+import { enviarEmail } from "@/lib/email/enviar";
 
 async function registrarAuditoria(
   supabase: Awaited<ReturnType<typeof crearClienteServidor>>,
@@ -94,11 +95,11 @@ export async function rechazarMensaje(mensajeId: string, leadId: string) {
 
 /**
  * Botón "Contactar": el único punto del sistema que puede marcar un mensaje
- * como enviado para el primer contacto. Exige mensaje ya aprobado y permiso
- * de llamada registrado — ambos comprobados también por triggers en la BD.
- *
- * El envío real (Resend) todavía no está conectado (fase 4, P-01 pendiente):
- * esto registra la acción y la auditoría, no dispara un email real todavía.
+ * como enviado y disparar el envío real. Primero se intenta el UPDATE a
+ * `estado='enviado'` — ahí es donde disparan los triggers de la base de
+ * datos (permiso de llamada, lista de bajas, aprobación). Sólo si esa
+ * actualización tiene éxito de verdad se llama a `enviarEmail`: así nunca
+ * se envía nada que la base de datos habría rechazado.
  */
 export async function marcarContactado(mensajeId: string, leadId: string) {
   const supabase = await crearClienteServidor();
@@ -106,15 +107,68 @@ export async function marcarContactado(mensajeId: string, leadId: string) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { error } = await supabase
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("contactos(email)")
+    .eq("id", leadId)
+    .single();
+
+  const emailContacto = (
+    lead?.contactos as unknown as { email: string | null } | null
+  )?.email;
+
+  if (!emailContacto) {
+    await registrarAuditoria(supabase, user?.email, "error_envio_email", "mensajes", mensajeId, {
+      lead_id: leadId,
+      motivo: "El lead no tiene email de contacto.",
+    });
+    revalidatePath(`/leads/${leadId}`);
+    return;
+  }
+
+  const { data: mensaje, error: errorActualizacion } = await supabase
     .from("mensajes")
     .update({ estado: "enviado", enviado_en: new Date().toISOString() })
-    .eq("id", mensajeId);
+    .eq("id", mensajeId)
+    .select("asunto, cuerpo")
+    .single();
 
-  if (!error) {
+  if (errorActualizacion || !mensaje) {
+    // Un guardarraíl de la base de datos ha rechazado el envío: nunca se llega a enviar el email.
+    await registrarAuditoria(
+      supabase,
+      user?.email,
+      "error_marcar_contactado",
+      "mensajes",
+      mensajeId,
+      { error: errorActualizacion?.message ?? "desconocido" },
+    );
+    revalidatePath(`/leads/${leadId}`);
+    return;
+  }
+
+  try {
+    const proveedorId = await enviarEmail({
+      para: emailContacto,
+      asunto: mensaje.asunto,
+      cuerpo: mensaje.cuerpo,
+    });
+
+    await supabase.from("mensajes").update({ proveedor_id: proveedorId }).eq("id", mensajeId);
     await supabase.from("leads").update({ estado: "enviado" }).eq("id", leadId);
     await registrarAuditoria(supabase, user?.email, "marcar_contactado", "mensajes", mensajeId, {
       lead_id: leadId,
+      proveedor_id: proveedorId,
+    });
+  } catch (errorEnvio) {
+    // La base de datos ya decía "enviado" pero el correo no salió de verdad:
+    // se corrige el estado a 'error' para que se pueda reintentar.
+    const mensajeError =
+      errorEnvio instanceof Error ? errorEnvio.message : "Error desconocido al enviar.";
+    await supabase.from("mensajes").update({ estado: "error" }).eq("id", mensajeId);
+    await registrarAuditoria(supabase, user?.email, "error_envio_email", "mensajes", mensajeId, {
+      lead_id: leadId,
+      error: mensajeError,
     });
   }
 
