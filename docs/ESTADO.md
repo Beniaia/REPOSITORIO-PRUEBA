@@ -16,13 +16,13 @@
 | Endpoint de ingesta | ✅ `/api/ingest/leads` con validación Zod, dedup por dominio/email, consulta de bajas antes de insertar. Sólo crea borradores, nunca marca enviado |
 | Consola de leads | 🟡 Bandeja (`/leads`) y ficha (`/leads/[id]`) funcionando contra Supabase real, con login. Falta pipeline/métricas/ajustes editables |
 | Motor de prospección (skill) | ✅ Reescrita para este sistema en `.claude/skills/prospeccion-baladre/SKILL.md` (la versión antigua, que escribía en Sheets, sigue en `agente-prospeccion-baladre/` sin tocar). Sin ejecutar todavía: bloqueada por token de Apify y por que la app esté desplegada |
-| Pipeline de Apify | 🟡 Diseñado en `APIFY.md`, sin ejecutar todavía. Falta validar los esquemas de entrada de los actores |
+| Pipeline de Apify | 🟡 Diseñado y **esquemas de entrada validados el 23/08/2026** contra los 3 actores reales (se corrigió un error en Website Content Crawler). Sin ejecutar todavía |
 | Descubrimiento con `vibe-prospecting` | ✅ Conector conectado y **cobertura verificada el 22/08/2026** con consultas reales. Recetas en `VIBE_PROSPECTING.md` |
 | Tarea programada semanal | ⬜ Pendiente |
 | Redacción y aprobación de emails | ⬜ Pendiente |
 | Envío real (fase 4, con dominio propio y Resend) | ⛔ Bloqueado por revisión jurídica y por el dominio |
 | Envío real — piloto por Gmail personal (D-22) | ✅ Probado con un envío real, funciona |
-| Migración del Google Sheets `BALADRE_LEADS` | ⬜ Pendiente |
+| Migración del Google Sheets `BALADRE_LEADS` | ✅ No hace falta — los datos son ficticios (confirmado 23/08/2026) |
 
 ## 2. Decisiones tomadas
 
@@ -51,6 +51,10 @@
 | D-21 | **Cada email debe indicar que lo envía un asistente de IA en nombre de Baladre**, y llevar un botón visible de baja | 23/08/2026 | Transparencia (AI Act) + refuerzo de RF-08. Actualizado en `CLAUDE.md` §6 |
 | D-22 | **Piloto de envío por Gmail personal** (`nbrotonscongost@gmail.com`), sin dominio propio ni SPF/DKIM/DMARC, dirección intercambiable vía `GMAIL_USER`/`GMAIL_APP_PASSWORD` | 23/08/2026 | Respuesta interina a P-01. **Explícitamente para probar antes de entregar el proyecto al cliente** — la cuenta de Gmail de Nuria es de pruebas, no la definitiva. Se sustituirá por el buzón real de Baladre en la entrega, cambiando sólo esas dos variables de entorno. Verificación en dos pasos activada y contraseña de aplicación generada el 23/08/2026 — **probado con un envío real, funciona** |
 | D-23 | **Cada tanda de prospección es de 10 leads** (bajo demanda o semanal), repartidos orientativamente 3 arquitectura / 3 agencias / 2 grupos tipo Vocento / 1 hotel / 1 restauración-joyería | 23/08/2026 | Confirmado explícitamente por Nuria. Reparto documentado en `SKILL.md`, no es una cuota rígida |
+| D-24 | **P-05 resuelta: aprueba cualquier persona con acceso a la app**, sin roles diferenciados entre Eva y María del Mar | 23/08/2026 | Confirmado por Nuria. Lo que garantiza la trazabilidad no es un permiso granular, es el registro de auditoría (`aprobado_por`, `aprobado_at`), que ya existe en el esquema |
+| ~~D-25~~ | ~~Despliegue en Vercel se deja para el final~~ | 23/08/2026 | **Superada por D-27 el mismo día**, minutos después: Nuria pide desplegar ya para poder hacer la primera prueba real |
+| D-27 | **Se despliega en Vercel ahora**, no al final | 23/08/2026 | Sustituye a D-25. Motivo: hace falta una URL pública de `/api/ingest/leads` para que el motor pueda enviar la tanda de prueba sin depender de que el ordenador de Nuria esté encendido con `npm run dev` |
+| D-26 | **Zoom y Google Calendar del piloto usan la cuenta personal de Nuria** (`nbrotonscongost@gmail.com`), igual que el envío por Gmail (D-22) | 23/08/2026 | Confirmado por Nuria. Se sustituirá por las cuentas reales de Baladre en la entrega. Resuelve P-13/P-14 de forma interina — sigue pendiente crear la app de Zoom y el proyecto de Google Cloud sobre esa cuenta |
 
 ## 3. Preguntas abiertas — bloquean trabajo
 
@@ -60,16 +64,16 @@
 | P-02 | **Hosting definitivo.** Vercel Hobby está restringido a uso no comercial (verificado en su documentación). ¿Se paga Pro a 20 $/mes o se busca alternativa (Railway, Render, Supabase Edge Functions)? | Despliegue | Nuria |
 | P-03 | **Revisión jurídica LSSI art. 21** para el email B2B en frío | Fase 4 completa | Abogado |
 | P-04 | **Directorios sectoriales**: cuáles permiten extracción automatizada según sus términos de uso | Alcance del motor | Nuria, leyendo términos |
-| P-05 | **Quién aprueba de verdad**: ¿Eva, María del Mar, las dos, o Nuria en su nombre? Afecta a permisos y a la auditoría | Diseño de auth | Baladre |
-| P-06 | **Migración del Sheets**: ¿se migran todos los leads históricos o sólo los activos? ¿Se conservan las bajas registradas? Las bajas **sí o sí** | F0 | Nuria |
+| ~~P-05~~ | ~~Quién aprueba de verdad~~ | **RESUELTA el 23/08/2026**: cualquier persona con acceso a la app. Ver D-24 |
+| ~~P-06~~ | ~~Migración del Sheets~~ | **RESUELTA el 23/08/2026**: los datos de `BALADRE_LEADS` son ficticios (de pruebas), no hay nada real que migrar. No se construye ningún script de migración |
 | P-07 | **Límite de envíos diarios** una vez arranque la fase 4 | Fase 4 | Nuria |
 | P-08 | **LinkedIn.** Nuria lo pidió; yo lo he dejado fuera porque sus condiciones prohíben la extracción automatizada y el riesgo recae sobre una cuenta real. Decidir entre: no usarlo, Sales Navigator de pago, o consulta manual persona a persona | Cobertura de decisores | Nuria + Baladre, con criterio jurídico |
 | P-09 | **Plan de Apify.** El Free (5 $/mes de crédito) cubre las pruebas; el ritmo semanal estimado se queda justo por encima. ¿Se sube a Starter (29 $/mes) o se recorta Instagram? | Coste mensual | Nuria, tras medir la primera tanda |
 | P-10 | **MCP de Apify**: ¿funciona bien como herramienta desde Claude o se llama por API HTTP? No lo he verificado | Implementación del motor | Comprobar en la primera sesión del motor |
 | ~~P-11~~ | ~~Conector de `vibe-prospecting` sin instalar~~ | **RESUELTA el 22/08/2026**: conectado y validado. Ver D-14 |
 | P-12 | **Coste real de `vibe-prospecting`.** Confirmado que un fetch de 5 empresas costó 5 créditos (1 por fila) y que el enriquecimiento se cobra aparte, pero no he verificado el precio del crédito ni el plan contratado. Consultar `show-pricing-plans` antes de programar la tarea semanal | Presupuesto mensual y tamaño de la tanda | Nuria |
-| P-13 | **Cuenta y credenciales de Zoom** para crear reuniones por API (OAuth o Server-to-Server). No hay cuenta de desarrollador de Zoom todavía | Función de agendar reunión | Nuria |
-| P-14 | **Proyecto de Google Cloud + OAuth para Google Calendar**, para crear el evento cuando se confirma la fecha de la reunión | Función de agendar reunión | Nuria |
+| P-13 | **Cuenta y credenciales de Zoom** para crear reuniones por API (OAuth o Server-to-Server). Interinamente sobre `nbrotonscongost@gmail.com` (D-26) — falta crear la app de Zoom sobre esa cuenta | Función de agendar reunión | Nuria |
+| P-14 | **Proyecto de Google Cloud + OAuth para Google Calendar**, para crear el evento cuando se confirma la fecha de la reunión. Interinamente sobre `nbrotonscongost@gmail.com` (D-26) — falta crear el proyecto y las credenciales OAuth | Función de agendar reunión | Nuria |
 | P-15 | **Conexión de la bandeja de Gmail de Baladre** para detectar respuestas automáticamente (RF ampliada: detección de respuestas ya no es "fase 2", se necesita ahora para disparar el email de invitación a reunión, D-17) | Motor de detección de respuestas | Nuria |
 
 ## 4. Credenciales y cuentas necesarias
@@ -128,3 +132,5 @@ Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ni
 | 22/08/2026 | Conector de `vibe-prospecting` conectado. **Validación empírica de la cobertura** con consultas reales al ICP de Baladre; documento `VIBE_PROSPECTING.md` con recetas, universos medidos y tres trampas técnicas. Maps sale del ciclo semanal (D-14, D-15, D-16) | Nuria + Claude |
 | 23/08/2026 | Repo conectado a GitHub y estructura inicial subida. Ampliación de alcance: seguimiento por respuesta con reunión de Zoom + Google Calendar, permiso telefónico obligatorio, transparencia IA en el email (D-17 a D-21, CLAUDE.md actualizado). Esquema v1.1 aplicado en un proyecto de Supabase ya existente (`ytqjhsbcnswshybhgevc`): tabla `reuniones`, permiso de llamada, triggers de guardarraíles. App Next 16 + React 19 + Tailwind scaffolded (login, bandeja, ficha de lead, `/baja`, endpoint de ingesta); `build`/`lint`/`typecheck` en verde y probado en local. Quedan abiertas P-13/14/15 (Zoom, Calendar, Gmail) y rellenar `SUPABASE_SERVICE_ROLE_KEY` | Nuria + Claude |
 | 23/08/2026 | Botón "Contactar" conectado a un envío real por SMTP de Gmail (`lib/email/enviar.ts`, D-22): piloto con el correo personal de Nuria, sin dominio propio. Se reescribe `marcarContactado` para actualizar primero la fila en `mensajes` (donde disparan los guardarraíles de la BD) y sólo enviar el email si esa actualización tiene éxito de verdad; si el envío falla después, el mensaje pasa a `estado='error'` y se puede reintentar desde la ficha. Pendiente de que el usuario active la verificación en dos pasos y genere la contraseña de aplicación de Gmail | Nuria + Claude |
+| 23/08/2026 | Primer usuario de Supabase Auth creado (`nbrotonscongost@gmail.com`), insertado directamente vía SQL (`auth.users` + `auth.identities`) con el MCP de Supabase, email confirmado. Contraseña temporal generada y entregada a Nuria en el chat — pendiente de cambiar y de sustituir por el usuario real de Baladre (Eva/María del Mar, P-05) | Nuria + Claude |
+| 23/08/2026 | P-05 resuelta (D-24: aprueba quien tenga acceso a la app), despliegue en Vercel pospuesto al final (D-25), Zoom/Calendar interinos sobre la cuenta personal de Nuria (D-26). **Esquemas de entrada de los 3 actores de Apify validados** contra la API real (sin entrar en la consola, con el token ya guardado): se encontró y corrigió un error real en `APIFY.md` — Website Content Crawler usaba nombres de campo que pertenecen a Contact Details Scraper. Consultados los precios reales de `vibe-prospecting` (`show-pricing-plans`) para avanzar P-12 | Nuria + Claude |

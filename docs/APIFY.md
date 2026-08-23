@@ -53,7 +53,7 @@ flowchart LR
 | 2 | **Website Content Crawler** | `apify/website-content-crawler` | El texto de la web en markdown: proyectos, clientes, "sobre nosotros", premios | ≈ **0,20 $ / 1.000 páginas** con rastreador HTTP simple; **0,50-5 $** con navegador |
 | 3 | **Instagram Scraper** | `apify/instagram-scraper` | Obra reciente publicada, aperturas, premios, colaboraciones | Desde **2,70 $ / 1.000 resultados** en plan gratuito; 2,30 $ en Starter |
 
-> Los IDs y los nombres de campo de entrada de cada actor los he tomado de sus páginas públicas. **Antes de la primera ejecución real, abre el esquema de entrada del actor en Apify y confirma los nombres exactos de los campos**: los actores cambian su esquema y no quiero que des por buenos los ejemplos de abajo sin comprobarlos.
+> **Validado el 23/08/2026** contra el `inputSchema` real de cada actor (vía `GET /v2/acts/{actorId}/builds/{buildId}` con el token de Apify — sin necesidad de entrar en la consola). Se encontró y corrigió un error: Website Content Crawler no usa `maxRequestsPerStartUrl`/`maxDepth` (eso es de Contact Details Scraper), usa `maxCrawlPages`/`maxCrawlDepth`. Ver el detalle en §4. Si el actor cambia de versión, repite esta comprobación antes de confiar en los ejemplos de abajo.
 
 ---
 
@@ -74,17 +74,38 @@ El descubrimiento ya no vive aquí: las recetas de búsqueda por segmento, con l
 
 ### Paso 2 aplicado — enriquecer las candidatas
 
+**Contact Details Scraper** (`vdrmota/contact-info-scraper`) — validado el 23/08/2026 contra el esquema real del build (`maxRequestsPerStartUrl` y `maxDepth` son correctos aquí):
+
 ```json
 {
   "startUrls": [{ "url": "https://estudio-ejemplo.com" }],
   "maxRequestsPerStartUrl": 12,
-  "maxDepth": 2
+  "maxDepth": 2,
+  "mergeContacts": true
 }
 ```
+
+`mergeContacts` (no estaba documentado antes) combina todos los contactos de un mismo dominio en una sola fila — actívalo, evita duplicados por subpágina.
+
+**Website Content Crawler** (`apify/website-content-crawler`) — **corregido el 23/08/2026**: el borrador anterior usaba `maxRequestsPerStartUrl`/`maxDepth`, que **no existen en este actor** (esos nombres son de Contact Details Scraper). Los campos reales, validados contra el esquema del build `version-0` (build 0.3.94):
+
+```json
+{
+  "startUrls": [{ "url": "https://estudio-ejemplo.com" }],
+  "crawlerType": "cheerio",
+  "maxCrawlDepth": 2,
+  "maxCrawlPages": 12,
+  "respectRobotsTxtFile": true
+}
+```
+
+`crawlerType` acepta `"cheerio"` (HTTP simple, el barato), `"jsdom"`, o variantes de Playwright (browser real, más caro). `respectRobotsTxtFile` existe como parámetro nativo del actor — actívalo siempre, es la forma más directa de cumplir la regla 1 de la sección 7 de este documento.
 
 Doce páginas por web es suficiente para llegar a "contacto", "estudio" y "proyectos" sin dispararse. Si una web no da email nominal en doce páginas, no lo va a dar en cincuenta.
 
 ### Paso 3 aplicado — señal en Instagram
+
+Validado el 23/08/2026 contra el esquema real: `resultsType`, `directUrls`, `resultsLimit` y `onlyPostsNewerThan` son correctos tal cual.
 
 ```json
 {

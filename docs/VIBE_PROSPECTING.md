@@ -147,6 +147,15 @@ No se buscan. Son quince empresas nominales; se trabajan con búsqueda web sobre
 
 ## 6. Coste
 
-No he verificado el precio en euros de los créditos ni cuántos consume cada enriquecimiento en tu plan. Lo que sí está confirmado por la propia herramienta: **un fetch de 5 empresas costó 5 créditos**, es decir un crédito por fila, y el enriquecimiento se cobra aparte por operación.
+Confirmado por la propia herramienta: **un fetch cuesta 1 crédito por fila devuelta** (5 empresas = 5 créditos), y el enriquecimiento (sacar el email real de un contacto) se cobra aparte, por operación.
 
-[Baja confianza — verifícalo antes de fijar presupuesto] Consulta tu plan y el coste por crédito en la propia herramienta (`show-pricing-plans`) antes de programar la tarea semanal. Está anotado como P-12 en `ESTADO.md`.
+**Precios de los paquetes, consultados el 23/08/2026** (`show-pricing-plans` — son compras únicas, no suscripción, y los créditos caducan a los 365 días):
+
+| Plan | Créditos | Precio | €/crédito aprox. |
+|---|---|---|---|
+| Plus | 900 | 29,90 $ | ≈ 0,033 $ |
+| Boost | 3.000 | 89,99 $ | ≈ 0,030 $ |
+| Ultra | 8.000 | 199,99 $ | ≈ 0,025 $ |
+| Elite | 30.000 | 649,99 $ | ≈ 0,022 $ |
+
+**Lo que todavía falta para cerrar P-12**: saber qué plan tiene contratado Baladre/Nuria ahora mismo y cuántos créditos quedan — eso no lo da esta herramienta, hay que mirarlo en el propio panel de Vibe Prospecting/Explorium. Con el descubrimiento de una tanda de 10 leads (que pide 2-3x candidatas antes de filtrar, así que ronda 20-30 filas) más el enriquecimiento de las ~10 que sobreviven, el gasto por tanda debería quedar en el entorno de 1-2 $ incluso con el plan más caro por crédito (Plus) — hay que medirlo con una tanda real para confirmarlo.
