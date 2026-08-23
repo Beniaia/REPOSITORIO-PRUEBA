@@ -1,7 +1,8 @@
 -- =====================================================================
 -- Baladre Cerámica · Sistema de prospección
 -- Esquema inicial de Supabase (Postgres)
--- Versión 1.0 · 21/08/2026
+-- Versión 1.1 · 23/08/2026 — añade reuniones, permiso de llamada previa
+-- y guardarraíles de envío (bajas y permiso) escritos como triggers.
 -- =====================================================================
 -- Ejecutar en el SQL Editor de Supabase o con `supabase db push`.
 -- Idioma del dominio: español, para que el negocio se lea sin traducir.
@@ -29,11 +30,13 @@ create type lead_estado_t as enum (
   'cliente', 'descartado', 'baja'
 );
 
-create type mensaje_tipo_t as enum ('email_1', 'seguimiento_1', 'seguimiento_2', 'manual');
+create type mensaje_tipo_t as enum ('email_1', 'seguimiento_1', 'seguimiento_2', 'invitacion_reunion', 'manual');
 
 create type mensaje_estado_t as enum ('borrador', 'aprobado', 'rechazado', 'enviado', 'error');
 
 create type actor_t as enum ('humano', 'agente', 'sistema');
+
+create type reunion_estado_t as enum ('propuesta', 'confirmada', 'cancelada', 'realizada');
 
 -- ---------------------------------------------------------------------
 -- Empresas
@@ -143,6 +146,10 @@ create table leads (
   responsable         text,
   siguiente_accion_en date,
   notas               text,
+  -- Llamada de permiso previa al primer contacto: requisito legal, no un paso opcional de UX.
+  -- El botón "Contactar" no debe activarse sin esto relleno.
+  permiso_llamada_en  timestamptz,
+  permiso_llamada_por text,
   creado_en           timestamptz not null default now(),
   actualizado_en      timestamptz not null default now(),
   unique (empresa_id, contacto_id)
@@ -166,16 +173,40 @@ create table mensajes (
   aprobado_por        text,
   aprobado_en         timestamptz,
   enviado_en          timestamptz,
+  -- Único caso permitido sin aprobación humana: la invitación a reunión que dispara
+  -- la propia respuesta del lead (CLAUDE.md regla 1, excepción única, D-17).
+  enviado_automaticamente boolean not null default false,
   proveedor_id        text,
   respondido_en       timestamptz,
   creado_en           timestamptz not null default now(),
-  -- Regla dura: no se puede marcar como enviado sin aprobación registrada
+  -- Regla dura: no se puede marcar como enviado sin aprobación registrada,
+  -- salvo la única excepción documentada: invitacion_reunion enviada automáticamente.
   constraint enviado_exige_aprobacion check (
-    estado <> 'enviado' or (aprobado_por is not null and aprobado_en is not null)
+    estado <> 'enviado'
+    or (aprobado_por is not null and aprobado_en is not null)
+    or (enviado_automaticamente and tipo = 'invitacion_reunion')
   )
 );
 create index on mensajes (lead_id);
 create index on mensajes (estado);
+
+-- ---------------------------------------------------------------------
+-- Reuniones: videollamada de máximo 15 min propuesta en el email 1
+-- ---------------------------------------------------------------------
+create table reuniones (
+  id                uuid primary key default gen_random_uuid(),
+  lead_id           uuid not null references leads(id) on delete cascade,
+  fecha_hora        timestamptz,            -- null hasta que una persona confirma la fecha (D-18)
+  duracion_minutos  int not null default 15,
+  zoom_url          text,
+  zoom_meeting_id   text,
+  calendar_event_id text,
+  estado            reunion_estado_t not null default 'propuesta',
+  confirmado_por    text,                   -- quién leyó la respuesta del lead y confirmó la fecha
+  confirmado_en     timestamptz,
+  creado_en         timestamptz not null default now()
+);
+create index on reuniones (lead_id);
 
 -- ---------------------------------------------------------------------
 -- Bajas (lista de supresión) — manda sobre todo lo demás
@@ -236,12 +267,62 @@ begin
   new.actualizado_en = now();
   return new;
 end;
-$$ language plpgsql;
+$$ language plpgsql set search_path = public;
 
 create trigger t_empresas_upd before update on empresas
   for each row execute function tocar_actualizado_en();
 create trigger t_leads_upd before update on leads
   for each row execute function tocar_actualizado_en();
+
+-- ---------------------------------------------------------------------
+-- Guardarraíles de envío, escritos en la base de datos y no sólo en la app
+-- ---------------------------------------------------------------------
+
+-- No se puede marcar el primer contacto (email_1) como enviado sin que el
+-- lead tenga registrada la llamada de permiso previa (CLAUDE.md, D-19).
+create or replace function verificar_permiso_llamada() returns trigger as $$
+declare
+  v_permiso timestamptz;
+begin
+  if new.estado = 'enviado' and new.tipo = 'email_1' then
+    select permiso_llamada_en into v_permiso from leads where id = new.lead_id;
+    if v_permiso is null then
+      raise exception 'No se puede enviar el primer contacto (email_1) del lead % sin registrar antes la llamada de permiso (leads.permiso_llamada_en)', new.lead_id;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql set search_path = public;
+
+create trigger t_mensajes_permiso_llamada before insert or update on mensajes
+  for each row execute function verificar_permiso_llamada();
+
+-- La lista de bajas manda: ningún mensaje puede marcarse enviado si el email
+-- del contacto o el dominio de la empresa están en `bajas` (regla 4, CLAUDE.md).
+create or replace function verificar_no_baja() returns trigger as $$
+declare
+  v_email   text;
+  v_dominio text;
+begin
+  if new.estado = 'enviado' then
+    select c.email, e.dominio into v_email, v_dominio
+    from leads l
+    join empresas e on e.id = l.empresa_id
+    left join contactos c on c.id = l.contacto_id
+    where l.id = new.lead_id;
+
+    if (v_email is not null and exists (select 1 from bajas where lower(email) = lower(v_email)))
+       or (v_dominio is not null and exists (select 1 from bajas where lower(dominio) = lower(v_dominio)))
+    then
+      raise exception 'El contacto o dominio del lead % está en la lista de bajas: no se puede enviar', new.lead_id;
+    end if;
+  end if;
+  return new;
+end;
+$$ language plpgsql set search_path = public;
+
+create trigger t_mensajes_no_baja before insert or update on mensajes
+  for each row execute function verificar_no_baja();
 
 -- ---------------------------------------------------------------------
 -- RLS
@@ -252,6 +333,7 @@ alter table senales     enable row level security;
 alter table scores      enable row level security;
 alter table leads       enable row level security;
 alter table mensajes    enable row level security;
+alter table reuniones   enable row level security;
 alter table bajas       enable row level security;
 alter table auditoria   enable row level security;
 alter table ejecuciones enable row level security;
@@ -262,7 +344,7 @@ alter table config_icp  enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['empresas','contactos','senales','scores','leads','mensajes','bajas','auditoria','ejecuciones','config_icp']
+  foreach t in array array['empresas','contactos','senales','scores','leads','mensajes','reuniones','bajas','auditoria','ejecuciones','config_icp']
   loop
     execute format(
       'create policy "auth_todo_%1$s" on %1$I for all to authenticated using (true) with check (true);', t
@@ -281,13 +363,13 @@ create policy "auditoria_insercion" on auditoria for insert to authenticated wit
 -- security_invoker: la vista respeta el RLS de quien consulta, no el del propietario.
 create view v_bandeja with (security_invoker = true) as
 select
-  l.id            as lead_id,
+  l.id                 as lead_id,
   l.estado,
-  e.nombre        as empresa,
+  e.nombre             as empresa,
   e.segmento,
   e.provincia,
   e.web,
-  c.nombre        as contacto_nombre,
+  c.nombre             as contacto_nombre,
   c.cargo,
   c.email,
   c.email_estado,
@@ -295,6 +377,20 @@ select
   s.nivel,
   s.motivo,
   (select count(*) from senales sn where sn.empresa_id = e.id) as n_senales,
+  l.permiso_llamada_en,
+  -- true si el contacto o el dominio de la empresa están en la lista de bajas
+  (
+    (c.email is not null and exists (select 1 from bajas b where lower(b.email) = lower(c.email)))
+    or (e.dominio is not null and exists (select 1 from bajas b where lower(b.dominio) = lower(e.dominio)))
+  ) as de_baja,
+  (
+    select m.estado from mensajes m
+    where m.lead_id = l.id order by m.creado_en desc limit 1
+  ) as ultimo_mensaje_estado,
+  (
+    select r.fecha_hora from reuniones r
+    where r.lead_id = l.id order by r.creado_en desc limit 1
+  ) as proxima_reunion,
   l.creado_en
 from leads l
 join empresas e on e.id = l.empresa_id

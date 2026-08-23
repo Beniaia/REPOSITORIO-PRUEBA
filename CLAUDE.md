@@ -69,6 +69,8 @@ Antes de decir que una tarea está terminada: `npm run build` y `npm run typeche
 ## 5. Reglas de negocio que no se negocian
 
 1. **Ningún mensaje sale sin aprobación humana registrada.** No escribas ninguna ruta, cron o función que pueda enviar sin pasar por `mensajes.estado = 'aprobado'` con `aprobado_por` y `aprobado_at` rellenos.
+   **Excepción única y explícita** (decidida el 23/08/2026, ver ESTADO.md D-17): el email de tipo `invitacion_reunion` — el que se envía automáticamente en cuanto el lead responde al primer contacto ya aprobado, con el enlace para agendar la videollamada — puede salir sin aprobación humana adicional, porque es el propio lead quien ha iniciado esa conversación. Sigue auditado igual que cualquier otro envío (`mensajes.enviado_automaticamente = true`). Ningún otro tipo de mensaje se beneficia de esta excepción: cualquier seguimiento comercial nuevo, cambio de guion o segunda vuelta exige aprobación humana explícita como todo lo demás.
+   **Antes de enviar el primer contacto** (`email_1`), el lead debe tener registrada la llamada telefónica de permiso (`leads.permiso_llamada_en` y `permiso_llamada_por` rellenos) — es un requisito legal, no un paso opcional de UX. El botón "Contactar" no debe activarse sin ese registro.
 2. **Sin fuente, no hay dato.** Un email, un cargo o una señal sin `fuente_url` no se guarda: el campo queda vacío y el score baja. Nunca completes un dato "por coherencia".
 3. **Sin señal verificable, no hay email.** Si no hay una `senal` con URL de los últimos 18 meses, el lead queda en `cualificado_sin_gancho`.
 4. **La lista de bajas manda.** Se consulta en la ingesta y otra vez en el envío. Un email en `bajas` no se toca jamás.
@@ -101,7 +103,7 @@ Baladre dejó de ser un taller artesanal. Es un **estudio creativo de piezas cer
 | Restauración | Identidad | La mesa como extensión de la marca |
 | Joyería / retail | Recuerdo | Pieza de autor como detalle de cliente |
 
-**Reglas duras del email:** máximo 120 palabras · asunto ≤ 45 caracteres · primera frase = la señal concreta de ese cliente · un solo CTA (20 minutos de conversación **o** el dossier, nunca los dos) · sin adjuntos en el primero · firma con identificación de Baladre y enlace de baja.
+**Reglas duras del email:** máximo 120 palabras · asunto ≤ 45 caracteres · primera frase = la señal concreta de ese cliente · un solo CTA: en el primer contacto, una videollamada de **máximo 15 minutos** para explicar qué puede ofrecer Baladre — pide a la persona que proponga fecha respondiendo al correo · sin adjuntos en el primero · el cuerpo debe indicar explícitamente que lo envía un asistente de IA en nombre de Baladre (transparencia, AI Act) · firma con identificación de Baladre y un botón/enlace claro de "no deseo recibir más correos" que da de baja al contacto de forma permanente.
 
 **La palanca de valor** (úsala en los seguimientos): un encargo suelto puede convertirse en ocho piezas del mismo proyecto — trofeo principal, reconocimientos, regalo para invitados, elemento de mesa, serie numerada, packaging, tarjeta con la historia, kit de prensa. No vendas una pieza: vende un sistema de identidad.
 
