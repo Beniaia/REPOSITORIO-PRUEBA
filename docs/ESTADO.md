@@ -23,7 +23,7 @@
 | Envío real (fase 4, con dominio propio y Resend) | ⛔ Bloqueado por revisión jurídica y por el dominio |
 | Envío real — piloto por Gmail personal (D-22) | ✅ Probado con un envío real, funciona |
 | Migración del Google Sheets `BALADRE_LEADS` | ✅ No hace falta — los datos son ficticios (confirmado 23/08/2026) |
-| Despliegue en Vercel | 🟡 **`repositorio-prueba-ylar`** (equipo `nuria-pruebas`), conectado a `Beniaia/REPOSITORIO-PRUEBA`, rama `main`. URL: `repositorio-prueba-ylar.vercel.app`. Segundo intento tras marcar "Production" en las variables — verificando si el 500 de `/middleware` (Supabase sin URL/key) ya ha desaparecido |
+| Despliegue en Vercel | ✅ **`repositorio-prueba-ylar`** (equipo `nuria-pruebas`), conectado a `Beniaia/REPOSITORIO-PRUEBA`, rama `main`. URL pública: **repositorio-prueba-ylar.vercel.app**. `/login` verificado en producción, sin errores de runtime |
 | `.env.local` completo | ✅ Las 8 variables rellenas: Supabase (URL, anon, service_role), `INGEST_SERVICE_TOKEN`, Gmail (usuario, contraseña de aplicación, nombre), Apify |
 
 ## 2. Decisiones tomadas
@@ -116,7 +116,7 @@ Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ni
 7. **Resolver P-12**: coste por crédito de `vibe-prospecting` — parcialmente resuelto (precios de los paquetes conocidos, ver `VIBE_PROSPECTING.md` §6), falta saber el plan/saldo actual.
 8. Resolver P-13/P-14/P-15 (Zoom, Google Calendar, Gmail de Baladre) — interinos sobre la cuenta de Nuria (D-26), guía paso a paso entregada el 24/08/2026, pendiente de que Nuria cree la app de Zoom y el proyecto de Google Cloud.
 9. **Siguiente paso real: ejecutar la skill del motor en modo prueba con 10 leads de Levante.** No se lanza hasta que Nuria lo confirme explícitamente.
-10. Pendiente menor: hay dos proyectos de Vercel casi idénticos (`repositorio-prueba` y `repositorio-prueba-ylar`, ambos ligados al mismo repo) — decidir si se borra el que no está en uso.
+10. Pendiente menor: hay dos proyectos de Vercel casi idénticos (`repositorio-prueba`, vacío y sin usar, y `repositorio-prueba-ylar`, el real) — decidir si se borra `repositorio-prueba`.
 
 ### Lo que ya funciona hoy (24/08/2026)
 
