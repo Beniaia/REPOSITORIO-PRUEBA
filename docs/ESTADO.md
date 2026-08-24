@@ -23,7 +23,7 @@
 | Envío real (fase 4, con dominio propio y Resend) | ⛔ Bloqueado por revisión jurídica y por el dominio |
 | Envío real — piloto por Gmail personal (D-22) | ✅ Probado con un envío real, funciona |
 | Migración del Google Sheets `BALADRE_LEADS` | ✅ No hace falta — los datos son ficticios (confirmado 23/08/2026) |
-| Despliegue en Vercel | ✅ **`repositorio-prueba-ylar`** (equipo `nuria-pruebas`), conectado a `Beniaia/REPOSITORIO-PRUEBA`, rama `main`. URL: `repositorio-prueba-ylar.vercel.app`. Con las 8 variables de entorno configuradas el 24/08/2026 tras un primer despliegue que daba error 500 (faltaban) |
+| Despliegue en Vercel | 🟡 **`repositorio-prueba-ylar`** (equipo `nuria-pruebas`), conectado a `Beniaia/REPOSITORIO-PRUEBA`, rama `main`. URL: `repositorio-prueba-ylar.vercel.app`. Segundo intento tras marcar "Production" en las variables — verificando si el 500 de `/middleware` (Supabase sin URL/key) ya ha desaparecido |
 | `.env.local` completo | ✅ Las 8 variables rellenas: Supabase (URL, anon, service_role), `INGEST_SERVICE_TOKEN`, Gmail (usuario, contraseña de aplicación, nombre), Apify |
 
 ## 2. Decisiones tomadas
