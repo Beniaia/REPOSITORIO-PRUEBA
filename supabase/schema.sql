@@ -3,6 +3,8 @@
 -- Esquema inicial de Supabase (Postgres)
 -- Versión 1.1 · 23/08/2026 — añade reuniones, permiso de llamada previa
 -- y guardarraíles de envío (bajas y permiso) escritos como triggers.
+-- Versión 1.2 · 24/08/2026 — añade respuesta_extracto y respuesta_de a
+-- mensajes, para el flujo de detección de respuesta (P-15).
 -- =====================================================================
 -- Ejecutar en el SQL Editor de Supabase o con `supabase db push`.
 -- Idioma del dominio: español, para que el negocio se lea sin traducir.
@@ -178,6 +180,10 @@ create table mensajes (
   enviado_automaticamente boolean not null default false,
   proveedor_id        text,
   respondido_en       timestamptz,
+  -- Extracto corto de la respuesta del lead (P-15): sólo lo justo para decidir
+  -- la fecha sin salir de la app, no el email entero.
+  respuesta_extracto  text,
+  respuesta_de        text,
   creado_en           timestamptz not null default now(),
   -- Regla dura: no se puede marcar como enviado sin aprobación registrada,
   -- salvo la única excepción documentada: invitacion_reunion enviada automáticamente.
