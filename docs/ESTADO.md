@@ -1,7 +1,7 @@
 # ESTADO.md — Dónde está el proyecto
 
 > **Este es el documento vivo.** Se actualiza al final de cada sesión de trabajo, tanto si trabajas con Claude Code como si tocas algo a mano.
-> Última actualización: **23 agosto 2026** · Fase actual: **F0 en marcha — base de datos aplicada, esqueleto de la app compilando y desplegable, falta cablear credenciales y el motor**
+> Última actualización: **24 agosto 2026** · Fase actual: **F0 completa — app desplegada en Vercel con credenciales reales, falta ejecutar la primera tanda del motor**
 
 ---
 
@@ -23,6 +23,8 @@
 | Envío real (fase 4, con dominio propio y Resend) | ⛔ Bloqueado por revisión jurídica y por el dominio |
 | Envío real — piloto por Gmail personal (D-22) | ✅ Probado con un envío real, funciona |
 | Migración del Google Sheets `BALADRE_LEADS` | ✅ No hace falta — los datos son ficticios (confirmado 23/08/2026) |
+| Despliegue en Vercel | ✅ **`repositorio-prueba-ylar`** (equipo `nuria-pruebas`), conectado a `Beniaia/REPOSITORIO-PRUEBA`, rama `main`. URL: `repositorio-prueba-ylar.vercel.app`. Con las 8 variables de entorno configuradas el 24/08/2026 tras un primer despliegue que daba error 500 (faltaban) |
+| `.env.local` completo | ✅ Las 8 variables rellenas: Supabase (URL, anon, service_role), `INGEST_SERVICE_TOKEN`, Gmail (usuario, contraseña de aplicación, nombre), Apify |
 
 ## 2. Decisiones tomadas
 
@@ -54,6 +56,7 @@
 | D-24 | **P-05 resuelta: aprueba cualquier persona con acceso a la app**, sin roles diferenciados entre Eva y María del Mar | 23/08/2026 | Confirmado por Nuria. Lo que garantiza la trazabilidad no es un permiso granular, es el registro de auditoría (`aprobado_por`, `aprobado_at`), que ya existe en el esquema |
 | ~~D-25~~ | ~~Despliegue en Vercel se deja para el final~~ | 23/08/2026 | **Superada por D-27 el mismo día**, minutos después: Nuria pide desplegar ya para poder hacer la primera prueba real |
 | D-27 | **Se despliega en Vercel ahora**, no al final | 23/08/2026 | Sustituye a D-25. Motivo: hace falta una URL pública de `/api/ingest/leads` para que el motor pueda enviar la tanda de prueba sin depender de que el ordenador de Nuria esté encendido con `npm run dev` |
+| D-28 | **Contraseña del primer usuario cambiada** por Nuria a una elegida por ella (ya no es la generada aleatoriamente) | 24/08/2026 | Sigue siendo `nbrotonscongost@gmail.com`, provisional hasta el usuario real de Baladre (P-05 histórica, ya resuelta por D-24 en cuanto a quién aprueba) |
 | D-26 | **Zoom y Google Calendar del piloto usan la cuenta personal de Nuria** (`nbrotonscongost@gmail.com`), igual que el envío por Gmail (D-22) | 23/08/2026 | Confirmado por Nuria. Se sustituirá por las cuentas reales de Baladre en la entrega. Resuelve P-13/P-14 de forma interina — sigue pendiente crear la app de Zoom y el proyecto de Google Cloud sobre esa cuenta |
 
 ## 3. Preguntas abiertas — bloquean trabajo
@@ -104,20 +107,22 @@ Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ni
 
 ## 6. Siguiente paso concreto
 
-1. **Rellenar `.env.local`**: `SUPABASE_SERVICE_ROLE_KEY` (Supabase dashboard → Project Settings → API), `INGEST_SERVICE_TOKEN` (inventar una cadena aleatoria larga), y **`GMAIL_USER`/`GMAIL_APP_PASSWORD`** — para esto último, activar antes la verificación en dos pasos en `nbrotonscongost@gmail.com` y generar la contraseña en `myaccount.google.com/apppasswords`. Sin esto, `/baja`, `/api/ingest/leads` y el botón "Contactar" fallan de forma controlada (ya verificado en local para los dos primeros).
-2. **Crear al menos un usuario en Supabase Auth** (Eva o María del Mar) para poder entrar en `/login` — todavía no hay ninguno.
-3. Responder P-05 (quién aprueba, ahora con matiz: el email de invitación a reunión sale solo, D-17).
-4. Conectar Vercel al repo de GitHub y desplegar (D-20: Hobby gratuito, con el aviso de uso no comercial sobre la mesa).
-5. Migrar el Sheets `BALADRE_LEADS`, empezando por las bajas.
-6. **Validar los esquemas de entrada de los actores de Apify** antes de la primera ejecución real.
-7. **Resolver P-12**: coste por crédito de `vibe-prospecting`.
-8. Resolver P-13/P-14/P-15 (Zoom, Google Calendar, Gmail de Baladre) antes de construir el flujo de reunión automática.
-9. Escribir la skill del motor y ejecutar en modo prueba con **10 leads de Levante**.
+1. ~~Rellenar `.env.local`~~ ✅ hecho el 24/08/2026 — las 8 variables están puestas, en local y en Vercel.
+2. ~~Crear al menos un usuario en Supabase Auth~~ ✅ hecho el 23/08/2026, contraseña definitiva puesta por Nuria el 24/08/2026 (D-28).
+3. ~~Responder P-05~~ ✅ resuelta (D-24).
+4. ~~Desplegar en Vercel~~ ✅ hecho el 24/08/2026 — `repositorio-prueba-ylar.vercel.app`.
+5. ~~Migrar el Sheets~~ ✅ no hacía falta (P-06 resuelta).
+6. ~~Validar los esquemas de entrada de Apify~~ ✅ hecho el 23/08/2026 (se corrigió un error real).
+7. **Resolver P-12**: coste por crédito de `vibe-prospecting` — parcialmente resuelto (precios de los paquetes conocidos, ver `VIBE_PROSPECTING.md` §6), falta saber el plan/saldo actual.
+8. Resolver P-13/P-14/P-15 (Zoom, Google Calendar, Gmail de Baladre) — interinos sobre la cuenta de Nuria (D-26), guía paso a paso entregada el 24/08/2026, pendiente de que Nuria cree la app de Zoom y el proyecto de Google Cloud.
+9. **Siguiente paso real: ejecutar la skill del motor en modo prueba con 10 leads de Levante.** No se lanza hasta que Nuria lo confirme explícitamente.
+10. Pendiente menor: hay dos proyectos de Vercel casi idénticos (`repositorio-prueba` y `repositorio-prueba-ylar`, ambos ligados al mismo repo) — decidir si se borra el que no está en uso.
 
-### Lo que ya funciona hoy (23/08/2026)
+### Lo que ya funciona hoy (24/08/2026)
 
 - Esquema de Supabase aplicado y verificado (`npm run build`/`lint`/`typecheck` en verde).
-- `/login`, `/baja` (probada en local: falla de forma controlada por falta de `SUPABASE_SERVICE_ROLE_KEY`, no por un bug), `/leads` (bandeja) y `/leads/[id]` (ficha con permiso de llamada, aprobar/rechazar mensaje y botón "Contactar" gateado).
+- App **desplegada y en producción**: `repositorio-prueba-ylar.vercel.app`, con las 8 variables de entorno configuradas (tras un primer 500 por falta de ellas, diagnosticado con `get_runtime_errors` del MCP de Vercel y corregido).
+- `/login` con usuario real (`nbrotonscongost@gmail.com`, contraseña puesta por Nuria), `/baja`, `/leads` (bandeja) y `/leads/[id]` (ficha con permiso de llamada, aprobar/rechazar mensaje y botón "Contactar" gateado).
 - `/api/ingest/leads`: valida token + esquema Zod, deduplica, consulta bajas, crea sólo borradores.
 - Guardarraíles de envío escritos como triggers en la propia base de datos: no se puede marcar `enviado` sin aprobación (salvo la excepción `invitacion_reunion`), sin permiso de llamada (para `email_1`), ni si el contacto está en `bajas`.
 
@@ -134,3 +139,4 @@ Todas las claves van a `.env.local` y a las variables de entorno de Vercel. **Ni
 | 23/08/2026 | Botón "Contactar" conectado a un envío real por SMTP de Gmail (`lib/email/enviar.ts`, D-22): piloto con el correo personal de Nuria, sin dominio propio. Se reescribe `marcarContactado` para actualizar primero la fila en `mensajes` (donde disparan los guardarraíles de la BD) y sólo enviar el email si esa actualización tiene éxito de verdad; si el envío falla después, el mensaje pasa a `estado='error'` y se puede reintentar desde la ficha. Pendiente de que el usuario active la verificación en dos pasos y genere la contraseña de aplicación de Gmail | Nuria + Claude |
 | 23/08/2026 | Primer usuario de Supabase Auth creado (`nbrotonscongost@gmail.com`), insertado directamente vía SQL (`auth.users` + `auth.identities`) con el MCP de Supabase, email confirmado. Contraseña temporal generada y entregada a Nuria en el chat — pendiente de cambiar y de sustituir por el usuario real de Baladre (Eva/María del Mar, P-05) | Nuria + Claude |
 | 23/08/2026 | P-05 resuelta (D-24: aprueba quien tenga acceso a la app), despliegue en Vercel pospuesto al final (D-25), Zoom/Calendar interinos sobre la cuenta personal de Nuria (D-26). **Esquemas de entrada de los 3 actores de Apify validados** contra la API real (sin entrar en la consola, con el token ya guardado): se encontró y corrigió un error real en `APIFY.md` — Website Content Crawler usaba nombres de campo que pertenecen a Contact Details Scraper. Consultados los precios reales de `vibe-prospecting` (`show-pricing-plans`) para avanzar P-12 | Nuria + Claude |
+| 24/08/2026 | D-25 revertida por D-27: se despliega ya, no al final. `.env.local` completado (`INGEST_SERVICE_TOKEN` generado, `SUPABASE_SERVICE_ROLE_KEY` obtenida del dashboard por Nuria). Contraseña del primer usuario cambiada por Nuria (D-28). Intento de conectar Vercel al repo vía MCP bloqueado primero por permisos, luego por falta de acceso de la app de GitHub al repo — Nuria completó el despliegue manualmente desde el propio panel de Vercel (`repositorio-prueba-ylar`, equipo `nuria-pruebas`). Primer despliegue daba **error 500** por falta de variables de entorno; diagnosticado con `get_runtime_errors` del MCP de Vercel (`Your project's URL and Key are required to create a Supabase client!`, roto en `/middleware`). Nuria añadió las 8 variables en el panel de Vercel; redeploy lanzado con un commit de este mismo archivo para forzarlo vía git. Queda un proyecto duplicado en Vercel (`repositorio-prueba`, sin usar) por limpiar. Guía paso a paso entregada para Zoom (Server-to-Server OAuth) y Google Calendar (proyecto de Google Cloud), ambos interinos sobre la cuenta personal de Nuria — pendientes de que ella los cree | Nuria + Claude |
