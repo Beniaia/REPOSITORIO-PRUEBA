@@ -6,6 +6,8 @@ import {
   aprobarMensaje,
   rechazarMensaje,
   marcarContactado,
+  registrarRespuestaLead,
+  confirmarFechaReunion,
 } from "@/lib/actions/leads";
 
 export default async function PaginaFichaLead({
@@ -51,6 +53,15 @@ export default async function PaginaFichaLead({
   const mensajePrimerContacto = (lead.mensajes ?? []).find(
     (m: { tipo: string }) => m.tipo === "email_1",
   );
+
+  const reunion = (lead.reuniones ?? [])[0] as
+    | {
+        id: string;
+        fecha_hora: string | null;
+        zoom_url: string | null;
+        estado: string;
+      }
+    | undefined;
 
   const puedeContactar =
     !bajaExistente &&
@@ -278,6 +289,83 @@ export default async function PaginaFichaLead({
           </p>
         )}
       </section>
+
+      {/* Reunión: respuesta del lead → confirmar fecha → Zoom + Calendar automático */}
+      {mensajePrimerContacto?.estado === "enviado" ? (
+        <section className="rounded-lg border border-tierra/15 bg-white p-5">
+          <h3 className="mb-3 font-medium text-tierra">Reunión</h3>
+
+          {reunion?.estado === "confirmada" ? (
+            <div className="text-sm text-green-700">
+              <p>
+                ✓ Reunión confirmada para el{" "}
+                {reunion.fecha_hora
+                  ? new Date(reunion.fecha_hora).toLocaleString("es-ES", {
+                      timeZone: "Europe/Madrid",
+                      dateStyle: "long",
+                      timeStyle: "short",
+                    })
+                  : "—"}
+              </p>
+              {reunion.zoom_url ? (
+                <a
+                  href={reunion.zoom_url}
+                  target="_blank"
+                  className="underline hover:text-terracota"
+                >
+                  Enlace de Zoom
+                </a>
+              ) : null}
+            </div>
+          ) : reunion ? (
+            <div>
+              <p className="mb-3 text-sm text-tierra/70">
+                El lead ha respondido. Lee su respuesta y confirma la fecha: se creará la
+                reunión de Zoom, el evento de Calendar y se enviará la invitación
+                automáticamente, sin aprobación adicional (excepción D-17 de CLAUDE.md).
+              </p>
+              <form
+                action={confirmarFechaReunion.bind(null, lead.id)}
+                className="flex flex-wrap items-end gap-3"
+              >
+                <label className="flex flex-col text-sm text-tierra/70">
+                  Fecha y hora (España)
+                  <input
+                    type="datetime-local"
+                    name="fecha_hora"
+                    required
+                    className="mt-1 rounded border border-tierra/20 px-3 py-2 text-sm"
+                  />
+                </label>
+                <button className="rounded bg-tierra px-4 py-2 text-sm font-medium text-arena hover:opacity-90">
+                  Confirmar reunión
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div>
+              <p className="mb-3 text-sm text-tierra/70">
+                Si el lead ha respondido al primer contacto, registra un extracto breve de su
+                respuesta para poder confirmar después la fecha de la videollamada.
+              </p>
+              <form
+                action={registrarRespuestaLead.bind(null, mensajePrimerContacto.id, lead.id)}
+                className="space-y-3"
+              >
+                <textarea
+                  name="extracto"
+                  rows={3}
+                  placeholder="Ej.: «Sí, me interesa. ¿Podemos el jueves a las 10?»"
+                  className="w-full rounded border border-tierra/20 px-3 py-2 text-sm"
+                />
+                <button className="rounded border border-tierra/30 px-4 py-2 text-sm text-tierra hover:bg-arena">
+                  Registrar respuesta del lead
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }
