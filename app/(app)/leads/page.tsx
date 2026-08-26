@@ -9,12 +9,23 @@ const ESTILO_NIVEL: Record<string, string> = {
 };
 
 type Filtros = {
+  segmento?: string;
   nivel?: string;
   permiso?: string;
   email1?: string;
   reunion?: string;
   baja?: string;
 };
+
+const SEGMENTOS: { valor: string; etiqueta: string }[] = [
+  { valor: "arquitectura", etiqueta: "Arquitectura / interiorismo" },
+  { valor: "agencia", etiqueta: "Agencia / eventos" },
+  { valor: "grupo_comunicacion", etiqueta: "Grupo de comunicación" },
+  { valor: "hotel", etiqueta: "Hotel premium" },
+  { valor: "restauracion", etiqueta: "Restauración" },
+  { valor: "joyeria", etiqueta: "Joyería / retail" },
+  { valor: "otro", etiqueta: "Otro" },
+];
 
 const ESTILO_SELECT =
   "mt-1 rounded border border-tierra/20 bg-white px-2 py-1.5 text-sm text-tierra";
@@ -29,6 +40,7 @@ export default async function PaginaBandeja({
 
   let consulta = supabase.from("v_bandeja").select("*");
 
+  if (filtros.segmento) consulta = consulta.eq("segmento", filtros.segmento);
   if (filtros.nivel) consulta = consulta.eq("nivel", filtros.nivel);
   if (filtros.permiso === "si") consulta = consulta.not("permiso_llamada_en", "is", null);
   if (filtros.permiso === "no") consulta = consulta.is("permiso_llamada_en", null);
@@ -55,6 +67,24 @@ export default async function PaginaBandeja({
       </div>
 
       <form className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-tierra/15 bg-white p-4">
+        <div className="flex flex-col">
+          <label htmlFor="segmento" className="text-xs text-tierra/60">
+            Tipo de cliente
+          </label>
+          <select
+            id="segmento"
+            name="segmento"
+            defaultValue={filtros.segmento ?? ""}
+            className={ESTILO_SELECT}
+          >
+            <option value="">Todos</option>
+            {SEGMENTOS.map((s) => (
+              <option key={s.valor} value={s.valor}>
+                {s.etiqueta}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="flex flex-col">
           <label htmlFor="nivel" className="text-xs text-tierra/60">
             Nivel
