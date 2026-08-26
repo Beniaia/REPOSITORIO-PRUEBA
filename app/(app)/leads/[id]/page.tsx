@@ -329,10 +329,19 @@ export default async function PaginaFichaLead({
                 className="flex flex-wrap items-end gap-3"
               >
                 <label className="flex flex-col text-sm text-tierra/70">
-                  Fecha y hora (España)
+                  Fecha (España)
                   <input
-                    type="datetime-local"
-                    name="fecha_hora"
+                    type="date"
+                    name="fecha"
+                    required
+                    className="mt-1 rounded border border-tierra/20 px-3 py-2 text-sm"
+                  />
+                </label>
+                <label className="flex flex-col text-sm text-tierra/70">
+                  Hora
+                  <input
+                    type="time"
+                    name="hora"
                     required
                     className="mt-1 rounded border border-tierra/20 px-3 py-2 text-sm"
                   />

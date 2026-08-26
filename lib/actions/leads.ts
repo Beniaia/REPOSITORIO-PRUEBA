@@ -235,7 +235,9 @@ export async function registrarRespuestaLead(mensajeId: string, leadId: string, 
  * de CLAUDE.md, documentada como D-17.
  */
 export async function confirmarFechaReunion(leadId: string, formData: FormData) {
-  const fechaHoraLocal = String(formData.get("fecha_hora") ?? "");
+  const fecha = String(formData.get("fecha") ?? "");
+  const hora = String(formData.get("hora") ?? "");
+  const fechaHoraLocal = fecha && hora ? `${fecha}T${hora}` : "";
   const supabase = await crearClienteServidor();
   const {
     data: { user },
