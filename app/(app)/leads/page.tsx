@@ -8,12 +8,42 @@ const ESTILO_NIVEL: Record<string, string> = {
   descartado: "bg-gray-200 text-gray-600",
 };
 
-export default async function PaginaBandeja() {
+type Filtros = {
+  nivel?: string;
+  permiso?: string;
+  email1?: string;
+  reunion?: string;
+  baja?: string;
+};
+
+const ESTILO_SELECT =
+  "mt-1 rounded border border-tierra/20 bg-white px-2 py-1.5 text-sm text-tierra";
+
+export default async function PaginaBandeja({
+  searchParams,
+}: {
+  searchParams: Promise<Filtros>;
+}) {
+  const filtros = await searchParams;
   const supabase = await crearClienteServidor();
-  const { data: leads, error } = await supabase
-    .from("v_bandeja")
-    .select("*")
-    .order("puntuacion", { ascending: false, nullsFirst: false });
+
+  let consulta = supabase.from("v_bandeja").select("*");
+
+  if (filtros.nivel) consulta = consulta.eq("nivel", filtros.nivel);
+  if (filtros.permiso === "si") consulta = consulta.not("permiso_llamada_en", "is", null);
+  if (filtros.permiso === "no") consulta = consulta.is("permiso_llamada_en", null);
+  if (filtros.email1 === "sin") consulta = consulta.is("email_1_estado", null);
+  else if (filtros.email1) consulta = consulta.eq("email_1_estado", filtros.email1);
+  if (filtros.reunion === "sin") consulta = consulta.is("reunion_estado", null);
+  else if (filtros.reunion) consulta = consulta.eq("reunion_estado", filtros.reunion);
+  if (filtros.baja === "si") consulta = consulta.eq("de_baja", true);
+
+  const { data: leads, error } = await consulta.order("puntuacion", {
+    ascending: false,
+    nullsFirst: false,
+  });
+
+  const hayFiltros = Object.values(filtros).some(Boolean);
 
   return (
     <div>
@@ -23,6 +53,96 @@ export default async function PaginaBandeja() {
           Leads ordenados por score. Los de baja no se pueden contactar nunca.
         </p>
       </div>
+
+      <form className="mb-4 flex flex-wrap items-end gap-3 rounded-lg border border-tierra/15 bg-white p-4">
+        <div className="flex flex-col">
+          <label htmlFor="nivel" className="text-xs text-tierra/60">
+            Nivel
+          </label>
+          <select id="nivel" name="nivel" defaultValue={filtros.nivel ?? ""} className={ESTILO_SELECT}>
+            <option value="">Todos</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="descartado">Descartado</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="permiso" className="text-xs text-tierra/60">
+            Permiso llamada
+          </label>
+          <select
+            id="permiso"
+            name="permiso"
+            defaultValue={filtros.permiso ?? ""}
+            className={ESTILO_SELECT}
+          >
+            <option value="">Todos</option>
+            <option value="si">Confirmado (ya llamé)</option>
+            <option value="no">Pendiente</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="email1" className="text-xs text-tierra/60">
+            Mail enviado
+          </label>
+          <select
+            id="email1"
+            name="email1"
+            defaultValue={filtros.email1 ?? ""}
+            className={ESTILO_SELECT}
+          >
+            <option value="">Todos</option>
+            <option value="enviado">Enviado</option>
+            <option value="error">Error al enviar</option>
+            <option value="aprobado">Aprobado, sin enviar</option>
+            <option value="sin">Sin enviar todavía</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="reunion" className="text-xs text-tierra/60">
+            Reunión Zoom
+          </label>
+          <select
+            id="reunion"
+            name="reunion"
+            defaultValue={filtros.reunion ?? ""}
+            className={ESTILO_SELECT}
+          >
+            <option value="">Todas</option>
+            <option value="confirmada">Programada</option>
+            <option value="cancelada">Rechazada</option>
+            <option value="realizada">Realizada</option>
+            <option value="propuesta">Propuesta, sin fecha</option>
+            <option value="sin">Sin reunión</option>
+          </select>
+        </div>
+        <div className="flex flex-col">
+          <label htmlFor="baja" className="text-xs text-tierra/60">
+            Bajas
+          </label>
+          <select id="baja" name="baja" defaultValue={filtros.baja ?? ""} className={ESTILO_SELECT}>
+            <option value="">Todos</option>
+            <option value="si">Sólo no contactar</option>
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="rounded bg-tierra px-4 py-2 text-sm font-medium text-arena hover:opacity-90"
+        >
+          Filtrar
+        </button>
+        {hayFiltros ? (
+          <Link href="/leads" className="text-sm text-tierra/60 underline hover:text-terracota">
+            Quitar filtros
+          </Link>
+        ) : null}
+      </form>
+
+      <p className="mb-3 text-sm text-tierra/60">
+        {leads ? `${leads.length} lead${leads.length === 1 ? "" : "s"}` : ""}
+        {hayFiltros ? " con estos filtros" : ""}
+      </p>
 
       {error ? (
         <p className="rounded border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
