@@ -40,6 +40,9 @@ export default async function PaginaBandeja() {
               <th className="px-4 py-3 font-medium">Nivel</th>
               <th className="px-4 py-3 font-medium">Estado</th>
               <th className="px-4 py-3 font-medium">Permiso llamada</th>
+              <th className="px-4 py-3 font-medium">Mail enviado</th>
+              <th className="px-4 py-3 font-medium">Reunión Zoom</th>
+              <th className="px-4 py-3 font-medium">Bajas</th>
             </tr>
           </thead>
           <tbody>
@@ -89,11 +92,46 @@ export default async function PaginaBandeja() {
                     <span className="text-tierra/40">Pendiente de llamar</span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-xs">
+                  {lead.email_1_estado === "enviado" ? (
+                    <span className="text-green-700">✓ Enviado</span>
+                  ) : lead.email_1_estado === "error" ? (
+                    <span className="font-semibold text-red-700">Error al enviar</span>
+                  ) : lead.email_1_estado === "aprobado" ? (
+                    <span className="text-tierra/60">Aprobado, sin enviar</span>
+                  ) : lead.email_1_estado === "rechazado" ? (
+                    <span className="text-tierra/40">Rechazado</span>
+                  ) : (
+                    <span className="text-tierra/40">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs">
+                  {lead.reunion_estado === "confirmada" ? (
+                    <span className="text-green-700">✓ Programada</span>
+                  ) : lead.reunion_estado === "cancelada" ? (
+                    <span className="font-semibold text-red-700">Rechazada</span>
+                  ) : lead.reunion_estado === "realizada" ? (
+                    <span className="text-tierra/60">Realizada</span>
+                  ) : lead.reunion_estado === "propuesta" ? (
+                    <span className="text-tierra/60">Propuesta, sin fecha</span>
+                  ) : (
+                    <span className="text-tierra/40">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-xs">
+                  {lead.de_baja ? (
+                    <span className="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">
+                      No contactar
+                    </span>
+                  ) : (
+                    <span className="text-tierra/40">—</span>
+                  )}
+                </td>
               </tr>
             ))}
             {leads && leads.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-tierra/50">
+                <td colSpan={9} className="px-4 py-8 text-center text-tierra/50">
                   Todavía no hay leads. Entrarán con la primera ejecución del motor.
                 </td>
               </tr>

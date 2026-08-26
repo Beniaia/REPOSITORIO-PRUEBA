@@ -397,7 +397,17 @@ select
     select r.fecha_hora from reuniones r
     where r.lead_id = l.id order by r.creado_en desc limit 1
   ) as proxima_reunion,
-  l.creado_en
+  l.creado_en,
+  -- estado del primer email (email_1): para la columna "mail enviado" de la bandeja
+  (
+    select m.estado from mensajes m
+    where m.lead_id = l.id and m.tipo = 'email_1' order by m.creado_en desc limit 1
+  ) as email_1_estado,
+  -- estado de la reunión (propuesta/confirmada/cancelada/realizada): para la columna "reunión Zoom" de la bandeja
+  (
+    select r.estado from reuniones r
+    where r.lead_id = l.id order by r.creado_en desc limit 1
+  ) as reunion_estado
 from leads l
 join empresas e on e.id = l.empresa_id
 left join contactos c on c.id = l.contacto_id
