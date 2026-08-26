@@ -261,6 +261,20 @@ export async function confirmarFechaReunion(leadId: string, formData: FormData) 
     return;
   }
 
+  // Evita crear una segunda reunión (y un segundo email real) si el formulario
+  // se envía dos veces seguidas — doble clic o reenvío accidental.
+  const { data: reunionYaConfirmada } = await supabase
+    .from("reuniones")
+    .select("id")
+    .eq("lead_id", leadId)
+    .eq("estado", "confirmada")
+    .maybeSingle();
+
+  if (reunionYaConfirmada) {
+    revalidatePath(`/leads/${leadId}`);
+    return;
+  }
+
   const inicio = madridADateUTC(fechaHoraLocal);
   const nombreEmpresa = empresa?.nombre ?? "vuestra empresa";
   const tema = `Baladre Cerámica × ${nombreEmpresa}`;
