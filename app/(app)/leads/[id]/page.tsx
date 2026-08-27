@@ -8,7 +8,9 @@ import {
   marcarContactado,
   registrarRespuestaLead,
   confirmarFechaReunion,
+  borrarLead,
 } from "@/lib/actions/leads";
+import { BotonBorrarLead } from "./BotonBorrarLead";
 
 export default async function PaginaFichaLead({
   params,
@@ -375,6 +377,18 @@ export default async function PaginaFichaLead({
           )}
         </section>
       ) : null}
+
+      {/* Zona de peligro: eliminar el lead de forma permanente */}
+      <section className="rounded-lg border border-red-200 bg-white p-5">
+        <h3 className="mb-2 text-sm font-medium text-tierra/60">Zona de peligro</h3>
+        <p className="mb-3 text-xs text-tierra/50">
+          Elimina este lead junto con sus emails y su reunión, de forma permanente. La empresa y
+          el contacto no se borran, sólo esta línea.
+        </p>
+        <form action={borrarLead.bind(null, lead.id)}>
+          <BotonBorrarLead empresa={lead.empresas?.nombre ?? "este lead"} />
+        </form>
+      </section>
     </div>
   );
 }

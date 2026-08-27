@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { crearClienteServidor } from "@/lib/supabase/server";
 import { enviarEmail } from "@/lib/email/enviar";
 import { crearReunionZoom } from "@/lib/zoom";
@@ -382,4 +383,36 @@ Baladre Cerámica
 
   revalidatePath(`/leads/${leadId}`);
   revalidatePath("/leads");
+}
+
+/**
+ * Elimina el lead de forma permanente (sus emails y su reunión se borran en
+ * cascada, ver `on delete cascade` en el esquema). La empresa y el contacto
+ * no se tocan, sólo esta línea de lead. Se audita antes de borrar, porque
+ * `entidad_id` en `auditoria` no exige que la fila siga existiendo.
+ */
+export async function borrarLead(leadId: string) {
+  const supabase = await crearClienteServidor();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: lead } = await supabase
+    .from("leads")
+    .select("empresas(nombre), contactos(email)")
+    .eq("id", leadId)
+    .single();
+
+  const empresa = (lead?.empresas as unknown as { nombre: string | null } | null)?.nombre;
+  const contactoEmail = (lead?.contactos as unknown as { email: string | null } | null)?.email;
+
+  await registrarAuditoria(supabase, user?.email, "borrar_lead", "leads", leadId, {
+    empresa,
+    contacto_email: contactoEmail,
+  });
+
+  await supabase.from("leads").delete().eq("id", leadId);
+
+  revalidatePath("/leads");
+  redirect("/leads");
 }
