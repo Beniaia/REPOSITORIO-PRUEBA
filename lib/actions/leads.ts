@@ -7,6 +7,7 @@ import { enviarEmail } from "@/lib/email/enviar";
 import { crearReunionZoom } from "@/lib/zoom";
 import { crearEventoCalendar } from "@/lib/google-calendar";
 import { madridADateUTC } from "@/lib/fecha-madrid";
+import { registrarRespuestaDetectada } from "@/lib/respuestas/registrar-respuesta";
 
 async function registrarAuditoria(
   supabase: Awaited<ReturnType<typeof crearClienteServidor>>,
@@ -192,36 +193,11 @@ export async function registrarRespuestaLead(mensajeId: string, leadId: string, 
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: lead } = await supabase
-    .from("leads")
-    .select("contactos(email)")
-    .eq("id", leadId)
-    .single();
-  const emailContacto = (lead?.contactos as unknown as { email: string | null } | null)?.email;
-
-  await supabase
-    .from("mensajes")
-    .update({
-      respondido_en: new Date().toISOString(),
-      respuesta_extracto: extracto.slice(0, 500),
-      respuesta_de: emailContacto,
-    })
-    .eq("id", mensajeId);
-
-  await supabase.from("leads").update({ estado: "respondido" }).eq("id", leadId);
-
-  const { data: reunionExistente } = await supabase
-    .from("reuniones")
-    .select("id")
-    .eq("lead_id", leadId)
-    .maybeSingle();
-
-  if (!reunionExistente) {
-    await supabase.from("reuniones").insert({ lead_id: leadId, estado: "propuesta" });
-  }
-
-  await registrarAuditoria(supabase, user?.email, "registrar_respuesta_lead", "mensajes", mensajeId, {
-    lead_id: leadId,
+  await registrarRespuestaDetectada(supabase, {
+    mensajeId,
+    extracto,
+    actor: user?.email ?? "desconocido",
+    actorTipo: "humano",
   });
 
   revalidatePath(`/leads/${leadId}`);
