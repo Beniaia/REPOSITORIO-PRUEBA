@@ -266,6 +266,28 @@ insert into config_icp (clave, valor, descripcion) values
 ('limite_envio_diario', '20', 'Máximo de emails aprobados que se pueden enviar por día (fase 4)');
 
 -- ---------------------------------------------------------------------
+-- Solicitudes de prospección: la app sólo pide, nunca busca leads ella
+-- misma (CLAUDE.md §1). El motor (skill en Claude) revisa esta tabla al
+-- arrancar y decide qué solicitud atender, en vez de una fecha fija de cron.
+-- ---------------------------------------------------------------------
+create type solicitud_prospeccion_tipo_t as enum ('inmediata', 'programada');
+create type solicitud_prospeccion_estado_t as enum ('pendiente', 'en_proceso', 'completada', 'cancelada');
+
+create table solicitudes_prospeccion (
+  id             uuid primary key default gen_random_uuid(),
+  tipo           solicitud_prospeccion_tipo_t not null default 'inmediata',
+  numero_leads   int not null default 10,
+  para_cuando    timestamptz,  -- null si es inmediata; fecha/hora deseada si es programada
+  estado         solicitud_prospeccion_estado_t not null default 'pendiente',
+  solicitado_por text,
+  ejecucion_id   uuid references ejecuciones(id) on delete set null,
+  notas          text,
+  creado_en      timestamptz not null default now(),
+  check (tipo = 'inmediata' or para_cuando is not null)
+);
+create index on solicitudes_prospeccion (estado);
+
+-- ---------------------------------------------------------------------
 -- Trigger de actualizado_en
 -- ---------------------------------------------------------------------
 create or replace function tocar_actualizado_en() returns trigger as $$
@@ -344,13 +366,14 @@ alter table bajas       enable row level security;
 alter table auditoria   enable row level security;
 alter table ejecuciones enable row level security;
 alter table config_icp  enable row level security;
+alter table solicitudes_prospeccion enable row level security;
 
 -- Usuarios autenticados (Eva, M. del Mar, Nuria): acceso completo de lectura/escritura.
 -- La ingesta del motor usa service_role, que salta RLS por diseño.
 do $$
 declare t text;
 begin
-  foreach t in array array['empresas','contactos','senales','scores','leads','mensajes','reuniones','bajas','auditoria','ejecuciones','config_icp']
+  foreach t in array array['empresas','contactos','senales','scores','leads','mensajes','reuniones','bajas','auditoria','ejecuciones','config_icp','solicitudes_prospeccion']
   loop
     execute format(
       'create policy "auth_todo_%1$s" on %1$I for all to authenticated using (true) with check (true);', t

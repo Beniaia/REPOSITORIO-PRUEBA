@@ -23,6 +23,23 @@ Antes de ejecutar, lee (no los repitas en el chat, ya los tienes en el repo): `C
 
 Geografía: Levante primero (Alicante, Valencia, Murcia). Sólo amplía a Madrid/Barcelona/resto de España si Levante no da suficientes candidatas de calidad.
 
+## De dónde sale el número de leads y cuándo ejecutar
+
+**Nunca prospectes "porque sí".** Esta skill sólo se ejecuta cuando alguien lo ha pedido explícitamente, en el chat o desde la app — nunca por iniciativa propia ni con una fecha fija de cron (así lo decidió Nuria, ver `ESTADO.md`).
+
+- Si te piden explícitamente "prospecta N leads" en el chat, usa ese número y no mires la cola de solicitudes.
+- Si te invocan sin ese detalle (por ejemplo, "revisa si hay algo que prospectar"), consulta la tabla `solicitudes_prospeccion` con el MCP de Supabase:
+  ```sql
+  select id, tipo, numero_leads, para_cuando
+  from solicitudes_prospeccion
+  where estado = 'pendiente'
+    and (tipo = 'inmediata' or para_cuando <= now())
+  order by creado_en asc
+  limit 1;
+  ```
+  - Si hay una fila: márcala `en_proceso` (`update solicitudes_prospeccion set estado = 'en_proceso' where id = '...'`) y usa su `numero_leads` como objetivo de la tanda. Al terminar el paso 7, márcala `completada` con el `ejecucion_id` que te haya devuelto el endpoint de ingesta.
+  - Si no hay ninguna fila: no hay nada pendiente. Dilo en el chat y para ahí — no improvises una tanda sin que nadie la haya pedido.
+
 ## Configuración que necesitas antes de empezar
 
 Si falta cualquiera de estas, **para y dilo en el chat** en vez de improvisar:
@@ -98,7 +115,12 @@ curl -s -X POST "$INGEST_URL" \
   -d @lote.json
 ```
 
-Lee la respuesta (`leads_nuevos`, `leads_duplicados`, `leads_en_baja`). Si hay error de validación, corrígelo y reintenta — no le des la vuelta al esquema para que "pase".
+Lee la respuesta (`leads_nuevos`, `leads_duplicados`, `leads_en_baja`) — trae también `ejecucion_id`. Si hay error de validación, corrígelo y reintenta — no le des la vuelta al esquema para que "pase".
+
+Si esta tanda venía de una fila de `solicitudes_prospeccion` (sección anterior), márcala ahora `completada` con ese `ejecucion_id`:
+```sql
+update solicitudes_prospeccion set estado = 'completada', ejecucion_id = '...' where id = '...';
+```
 
 ### 8. Resumen final en el chat
 
